@@ -1,5 +1,14 @@
 {
-  "rewrites": [{ "source": "/", "destination": "/04/" }],
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/", "dest": "/04/index.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
   "functions": {
     "api/motivation.js": {
       "maxDuration": 30

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>First screen with search query</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #d8d8dc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 340px;
+      height: 680px;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (min-width: 380px) {
+      .screen {
+        border-radius: 20px;
+        box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .view {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      padding: 36px 24px 28px;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition:
+        opacity 0.5s ease,
+        transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.5s;
+      z-index: 0;
+    }
+
+    .view.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+      z-index: 1;
+    }
+
+    .view.leaving {
+      opacity: 0;
+      visibility: visible;
+      pointer-events: none;
+      transform: translateY(-8px);
+      z-index: 2;
+    }
+
+    /* ——— Search home ——— */
+    .search-home {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding-top: 48px;
+      padding-bottom: 40px;
+    }
+
+    .brand {
+      margin-bottom: 36px;
+    }
+
+    .brand-logo {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 42px;
+      font-weight: 800;
+      color: #36b37e;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      position: relative;
+      display: inline-block;
+    }
+
+    .search-form {
+      width: 100%;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 999px;
+      background: #fff;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .search-bar:focus-within {
+      border-color: transparent;
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.18);
+    }
+
+    .search-bar__icon {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      color: #9aa0a6;
+    }
+
+    .search-bar__input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #1a1a1a;
+      min-width: 0;
+    }
+
+    .search-bar__input::placeholder {
+      color: #b0b0b0;
+      font-weight: 500;
+    }
+
+    .search-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .search-btn {
+      border: none;
+      background: #f4f4f5;
+      color: #3c4043;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .search-btn:hover {
+      background: #ebebec;
+    }
+
+    .search-btn.primary {
+      background: #36b37e;
+      color: #fff;
+    }
+
+    .search-btn.primary:hover:not(:disabled) {
+      background: #2fa06f;
+    }
+
+    .search-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .search-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* ——— Loading view ——— */
+    .loading-view {
+      padding-top: 28px;
+    }
+
+    .search-section {
+      flex-shrink: 0;
+      padding-top: 180px;
+      transition:
+        padding-top 0.75s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.45s ease,
+        transform 0.45s ease;
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    .loading-view.stage-query .search-section {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .loading-view.stage-offer .search-section {
+      padding-top: 0;
+    }
+
+    .search-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #b0b0b0;
+      margin-bottom: 8px;
+    }
+
+    .typewriter-wrap {
+      min-height: 56px;
+    }
+
+    .typewriter-text {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+
+    .typewriter-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 0.85em;
+      background: #36b37e;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    .typewriter-cursor.done {
+      opacity: 0;
+      animation: none;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .offer-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-top: 8px;
+      opacity: 0;
+      transform: translateY(28px);
+      pointer-events: none;
+      transition:
+        opacity 0.55s ease 0.2s,
+        transform 0.55s cubic-bezier(0.4, 0, 0.2, 1) 0.2s;
+    }
+
+    .loading-view.stage-offer .offer-section {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .offer-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .offer-brand__logo {
+      font-size: 22px;
+      font-weight: 800;
+      color: #36b37e;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .offer-brand__logo .logo-i {
+      position: relative;
+      display: inline-block;
+    }
+
+    .offer-brand__logo .logo-leaves {
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 8px;
+    }
+
+    .offer-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -0.01em;
+      margin-bottom: 18px;
+    }
+
+    .progress-block {
+      margin-bottom: 22px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .progress-status {
+      font-size: 12px;
+      font-weight: 600;
+      color: #36b37e;
+    }
+
+    .progress-pct {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: #ebebeb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #36b37e;
+      border-radius: 999px;
+      /* progressive fill driven by JS — no stepped CSS transition */
+    }
+
+    .features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 160px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .feature.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .feature__check {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #36b37e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: scale(0);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .feature.visible .feature__check {
+      transform: scale(1);
+    }
+
+    .feature__check svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .feature__text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2a2a2a;
+      line-height: 1.3;
+    }
+
+    /* ——— Goal view (from 01) ——— */
+    .goal-view {
+      padding: 28px 20px 24px;
+    }
+
+    .goal-header {
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-text {
+      font-size: 24px;
+      font-weight: 800;
+      color: #36b37e;
+      letter-spacing: -0.02em;
+      position: relative;
+    }
+
+    .logo-i {
+      position: relative;
+      display: inline-block;
+    }
+
+    .logo-leaves {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 9px;
+    }
+
+    .headline {
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1.2;
+      text-align: center;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+
+    .subheadline {
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      color: #b0b0b0;
+      margin-bottom: 20px;
+    }
+
+    .unit-toggle {
+      display: flex;
+      max-width: 220px;
+      margin: 0 auto;
+      background: #f2f2f7;
+      border-radius: 999px;
+      padding: 3px;
+      position: relative;
+      user-select: none;
+    }
+
+    .unit-toggle__slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: calc((100% - 6px) / 3);
+      height: calc(100% - 6px);
+      background: #ffffff;
+      border-radius: 999px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .unit-toggle__option {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #9ca3af;
+      padding: 8px 0;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+      transition: color 0.2s ease;
+      border-radius: 999px;
+    }
+
+    .unit-toggle__option.active {
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .unit-toggle__option:active {
+      transform: scale(0.96);
+    }
+
+    .buttons {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      padding-top: 32px;
+      padding-bottom: 16px;
+    }
+
+    .goal-btn {
+      width: 100%;
+      padding: 18px 20px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 18px;
+      background: #ffffff;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .goal-btn:hover {
+      border-color: #d4d4d4;
+      background: #fafafa;
+    }
+
+    .goal-btn:active,
+    .goal-btn.pressed {
+      transform: scale(0.98);
+      background: #f0f0f0;
+      border-color: #ccc;
+    }
+
+    .footer {
+      flex-shrink: 0;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #b0b0b0;
+      padding-top: 8px;
+    }
+
+    .footer a {
+      color: #1a1a1a;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <section class="view search-home active" id="searchView">
+      <div class="brand">
+        <span class="brand-logo">Boogle</span>
+      </div>
+
+      <form class="search-form" id="searchForm" autocomplete="off">
+        <div class="search-bar">
+          <svg class="search-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M20 20l-3.5-3.5"/>
+          </svg>
+          <input
+            class="search-bar__input"
+            id="searchInput"
+            type="search"
+            name="q"
+            placeholder="Search the web"
+            enterkeyhint="search"
+          >
+        </div>
+
+        <div class="search-actions">
+          <button type="submit" class="search-btn primary" id="searchBtn" disabled>Search</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="view loading-view" id="loadingView">
+      <div class="search-section">
+        <p class="search-label">You were looking for</p>
+        <div class="typewriter-wrap">
+          <p class="typewriter-text">
+            <span id="typewriter"></span><span class="typewriter-cursor" id="typewriterCursor"></span>
+          </p>
+        </div>
+      </div>
+
+      <div class="offer-section">
+        <div class="offer-brand">
+          <span class="offer-brand__logo">
+            B<span class="logo-i">i<svg class="logo-leaves" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10C6 10 2 7 3 3C4 0 6 1 6 4" fill="#36b37e"/>
+              <path d="M10 10C10 10 14 7 13 3C12 0 10 1 10 4" fill="#36b37e"/>
+            </svg></span>tePal
+          </span>
+        </div>
+        <h2 class="offer-heading">Getting everything ready</h2>
+
+        <div class="progress-block">
+          <div class="progress-meta">
+            <span class="progress-status" id="progressStatus">Preparing your toolkit</span>
+            <span class="progress-pct" id="progressPct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <ul class="features" id="features">
+          <li class="feature">
+            <span class="feature__check">
+              <svg viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="feature__text">AI calorie tracking</span>
+          </li>
+          <li class="feature">
+            <span class="feature__check">
+              <svg viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="feature__text">Calculate your deficit</span>
+          </li>
+          <li class="feature">
+            <span class="feature__check">
+              <svg viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="feature__text">Track water and fasting</span>
+          </li>
+          <li class="feature">
+            <span class="feature__check">
+              <svg viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="feature__text">Log workouts</span>
+          </li>
+          <li class="feature">
+            <span class="feature__check">
+              <svg viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="feature__text">Fun weight loss awaits</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="view goal-view" id="goalView">
+      <header class="goal-header">
+        <div class="logo">
+          <span class="logo-text">
+            B<span class="logo-i">i<svg class="logo-leaves" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10C6 10 2 7 3 3C4 0 6 1 6 4" fill="#36b37e"/>
+              <path d="M10 10C10 10 14 7 13 3C12 0 10 1 10 4" fill="#36b37e"/>
+            </svg></span>tePal
+          </span>
+        </div>
+
+        <h1 class="headline">Personalized weight-loss plan according to your goal</h1>
+        <p class="subheadline">What is your weight goal?</p>
+
+        <div class="unit-toggle" role="tablist" aria-label="Weight unit">
+          <div class="unit-toggle__slider" id="toggleSlider"></div>
+          <button type="button" class="unit-toggle__option" role="tab" data-unit="kg" aria-selected="false">kg</button>
+          <button type="button" class="unit-toggle__option" role="tab" data-unit="lbs" aria-selected="false">lbs</button>
+          <button type="button" class="unit-toggle__option active" role="tab" data-unit="st" aria-selected="true">st</button>
+        </div>
+      </header>
+
+      <div class="buttons">
+        <button type="button" class="goal-btn" data-goal="0">Lose 1–2 st</button>
+        <button type="button" class="goal-btn" data-goal="1">Lose 2–3 st</button>
+        <button type="button" class="goal-btn" data-goal="2">Lose over 3 st</button>
+        <button type="button" class="goal-btn" data-goal="3">I haven't decided yet</button>
+      </div>
+
+      <p class="footer">
+        By continuing you agree with our<br>
+        <a href="#">Terms of Use</a> and <a href="#">Privacy Notice</a>
+      </p>
+    </section>
+  </div>
+
+  <script>
+    const MIN_QUERY_LENGTH = 5;
+    const TYPE_SPEED = 55;
+    const HOLD_AFTER_TYPE = 700;
+    const OFFER_REVEAL_DELAY = 500;
+    const LOAD_DURATION = 4200;
+    const HOLD_AFTER_COMPLETE = 900;
+    const TRANSITION_MS = 500;
+
+    const searchView = document.getElementById('searchView');
+    const loadingView = document.getElementById('loadingView');
+    const goalView = document.getElementById('goalView');
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const typewriterEl = document.getElementById('typewriter');
+    const typewriterCursor = document.getElementById('typewriterCursor');
+    const progressFill = document.getElementById('progressFill');
+    const progressPct = document.getElementById('progressPct');
+    const progressStatus = document.getElementById('progressStatus');
+    const features = document.querySelectorAll('.feature');
+    const totalFeatures = features.length;
+
+    const STATUS_BY_STEP = [
+      'Getting ready',
+      'AI calorie tracking',
+      'Calculate your deficit',
+      'Track water and fasting',
+      'Log workouts',
+      'Ready'
+    ];
+
+    let queryText = '';
+    let charIndex = 0;
+    let typewriterTimer = null;
+    let stageTimer = null;
+    let progressRaf = null;
+    let revealedCount = 0;
+
+    function updateSearchButton() {
+      const len = searchInput.value.trim().length;
+      searchBtn.disabled = len < MIN_QUERY_LENGTH;
+    }
+
+    searchInput.addEventListener('input', updateSearchButton);
+
+    searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = searchInput.value.trim();
+      if (query.length < MIN_QUERY_LENGTH) return;
+      startSearch(query);
+    });
+
+    function resetLoadingUI() {
+      loadingView.classList.remove('stage-query', 'stage-offer', 'leaving');
+      goalView.classList.remove('active', 'leaving');
+      typewriterEl.textContent = '';
+      typewriterCursor.classList.remove('done');
+      features.forEach(f => f.classList.remove('visible'));
+      progressFill.style.width = '0%';
+      progressPct.textContent = '0%';
+      progressStatus.textContent = STATUS_BY_STEP[0];
+      revealedCount = 0;
+    }
+
+    function startSearch(query) {
+      searchInput.value = query;
+      queryText = query;
+      charIndex = 0;
+
+      stopLoading();
+      resetLoadingUI();
+
+      goalView.classList.remove('active');
+      searchView.classList.remove('active');
+      loadingView.classList.add('active');
+
+      void loadingView.offsetWidth;
+      loadingView.classList.add('stage-query');
+
+      typewriterTick();
+    }
+
+    function typewriterTick() {
+      typewriterEl.textContent = queryText.slice(0, charIndex + 1);
+      charIndex++;
+      if (charIndex >= queryText.length) {
+        typewriterCursor.classList.add('done');
+        stageTimer = setTimeout(revealOfferStage, HOLD_AFTER_TYPE);
+        return;
+      }
+      typewriterTimer = setTimeout(typewriterTick, TYPE_SPEED);
+    }
+
+    function revealOfferStage() {
+      loadingView.classList.add('stage-offer');
+      stageTimer = setTimeout(startProgressiveLoad, OFFER_REVEAL_DELAY);
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function startProgressiveLoad() {
+      revealedCount = 0;
+      features.forEach(f => f.classList.remove('visible'));
+      progressFill.style.width = '0%';
+      progressPct.textContent = '0%';
+      progressStatus.textContent = STATUS_BY_STEP[0];
+
+      const start = performance.now();
+
+      function frame(now) {
+        const raw = Math.min(1, (now - start) / LOAD_DURATION);
+        const eased = easeOutCubic(raw);
+        const pct = Math.round(eased * 100);
+
+        progressFill.style.width = (eased * 100) + '%';
+        progressPct.textContent = pct + '%';
+
+        const shouldReveal = Math.min(totalFeatures, Math.floor(eased * totalFeatures + 0.001));
+        while (revealedCount < shouldReveal) {
+          features[revealedCount].classList.add('visible');
+          revealedCount++;
+          progressStatus.textContent = STATUS_BY_STEP[revealedCount] || 'Ready';
+        }
+
+        if (raw < 1) {
+          progressRaf = requestAnimationFrame(frame);
+        } else {
+          progressFill.style.width = '100%';
+          progressPct.textContent = '100%';
+          progressStatus.textContent = 'Ready';
+          features.forEach(f => f.classList.add('visible'));
+          revealedCount = totalFeatures;
+          stageTimer = setTimeout(showGoalScreen, HOLD_AFTER_COMPLETE);
+        }
+      }
+
+      progressRaf = requestAnimationFrame(frame);
+    }
+
+    function showGoalScreen() {
+      stopLoading();
+
+      loadingView.classList.add('leaving');
+      loadingView.classList.remove('active');
+
+      goalView.classList.add('active');
+      updateSliderPosition();
+
+      stageTimer = setTimeout(() => {
+        loadingView.classList.remove('leaving');
+      }, TRANSITION_MS);
+    }
+
+    function stopLoading() {
+      if (typewriterTimer) clearTimeout(typewriterTimer);
+      if (stageTimer) clearTimeout(stageTimer);
+      if (progressRaf) cancelAnimationFrame(progressRaf);
+    }
+
+    /* Goal screen (from 01) */
+    const GOAL_LABELS = {
+      kg: [
+        'Lose 1–10 kg',
+        'Lose 11–20 kg',
+        'Lose over 20 kg',
+        "I haven't decided yet"
+      ],
+      lbs: [
+        'Lose 2–22 lbs',
+        'Lose 24–44 lbs',
+        'Lose over 44 lbs',
+        "I haven't decided yet"
+      ],
+      st: [
+        'Lose 1–2 st',
+        'Lose 2–3 st',
+        'Lose over 3 st',
+        "I haven't decided yet"
+      ]
+    };
+
+    const UNIT_ORDER = ['kg', 'lbs', 'st'];
+    let currentUnit = 'st';
+
+    const slider = document.getElementById('toggleSlider');
+    const toggleOptions = document.querySelectorAll('.unit-toggle__option');
+    const goalButtons = document.querySelectorAll('.goal-btn');
+
+    function updateSliderPosition() {
+      const index = UNIT_ORDER.indexOf(currentUnit);
+      slider.style.transform = `translateX(${index * 100}%)`;
+    }
+
+    function updateGoalLabels() {
+      const labels = GOAL_LABELS[currentUnit];
+      goalButtons.forEach((btn, i) => {
+        btn.textContent = labels[i];
+      });
+    }
+
+    function setUnit(unit) {
+      currentUnit = unit;
+      toggleOptions.forEach(opt => {
+        const isActive = opt.dataset.unit === unit;
+        opt.classList.toggle('active', isActive);
+        opt.setAttribute('aria-selected', isActive);
+      });
+      updateSliderPosition();
+      updateGoalLabels();
+    }
+
+    toggleOptions.forEach(opt => {
+      opt.addEventListener('click', () => setUnit(opt.dataset.unit));
+    });
+
+    goalButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 150);
+      });
+    });
+
+    updateSliderPosition();
+    searchInput.focus();
+  </script>
+</body>
+</html>

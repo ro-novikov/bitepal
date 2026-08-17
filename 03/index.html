@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X days faster, not dates</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #d8d8dc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 340px;
+      height: 680px;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (min-width: 380px) {
+      .screen {
+        border-radius: 20px;
+        box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .view {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      padding: 28px 20px 24px;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.5s ease, transform 0.5s ease, visibility 0.5s;
+      z-index: 0;
+    }
+
+    .view.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+      z-index: 1;
+    }
+
+    .view.leaving {
+      opacity: 0;
+      transform: translateY(-8px);
+      z-index: 2;
+    }
+
+    .prediction-view {
+      overflow-y: auto;
+    }
+
+    .prediction-view__body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-self: center;
+      background: #e8f8ef;
+      color: #36b37e;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 999px;
+      margin-bottom: 22px;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .prediction {
+      text-align: center;
+      margin-bottom: 24px;
+      padding: 0 4px;
+    }
+
+    .prediction__lead {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 10px;
+    }
+
+    .prediction__lines {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .prediction__date {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      min-height: 30px;
+    }
+
+    .prediction__goal {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+
+    .prediction__sub {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1.35;
+    }
+
+    /* iOS-style date wheel — month + day scroll together */
+    .date-wheel {
+      display: inline-block;
+      height: 30px;
+      max-height: 30px;
+      vertical-align: middle;
+    }
+
+    .date-wheel__viewport {
+      display: block;
+      position: relative;
+      width: 178px;
+      height: 30px;
+      max-height: 30px;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+
+    .date-wheel__strip {
+      display: block;
+      will-change: transform;
+    }
+
+    .date-wheel__row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 30px;
+      line-height: 30px;
+      white-space: nowrap;
+    }
+
+    .date-wheel__month {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .date-wheel__day {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chart-card {
+      border: 1.5px solid #ebebeb;
+      border-radius: 18px;
+      padding: 16px 8px 12px 12px;
+      margin-bottom: 24px;
+      flex-shrink: 0;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      overflow: visible;
+    }
+
+    .chart-wrap svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+
+    .chart-label {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      fill: #b0b0b0;
+    }
+
+    .chart-grid {
+      stroke: #e8e8e8;
+      stroke-width: 1;
+      stroke-dasharray: 3 4;
+    }
+
+    .curve {
+      fill: none;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dot {
+      opacity: 0;
+      transform-origin: center;
+      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .dot.visible {
+      opacity: 1;
+    }
+
+    .dot-ring {
+      fill: #fff;
+      stroke-width: 2.5;
+    }
+
+    .event-callout {
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+
+    .event-callout.visible {
+      opacity: 1;
+    }
+
+    .event-callout__line {
+      stroke: #cfcfcf;
+      stroke-width: 1.2;
+    }
+
+    .event-callout__text {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      fill: #888;
+    }
+
+    .goal-tooltip {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .goal-tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .goal-tooltip__bg {
+      fill: #36b37e;
+    }
+
+    .goal-tooltip__text {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      fill: #fff;
+    }
+
+    .footer-text {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: #1a1a1a;
+      padding: 0 8px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .footer-text.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .footer-text strong {
+      font-weight: 800;
+    }
+
+    .next-btn {
+      width: 100%;
+      margin-top: auto;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 999px;
+      background: #1a1a1a;
+      color: #ffffff;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s ease, transform 0.4s ease, background 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .next-btn.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .next-btn:hover {
+      background: #2a2a2a;
+    }
+
+    .next-btn:active {
+      transform: scale(0.98);
+    }
+
+    .next-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ——— Celebrate view ——— */
+    .celebrate-view {
+      background: linear-gradient(165deg, #e8f8ef 0%, #ffffff 45%, #fff9e6 100%);
+      padding: 32px 24px 28px;
+      overflow: hidden;
+    }
+
+    .celebrate-view::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(54, 179, 126, 0.18) 0%, transparent 45%),
+        radial-gradient(circle at 85% 15%, rgba(250, 204, 21, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 70% 80%, rgba(54, 179, 126, 0.12) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .confetti span {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      opacity: 0;
+      animation: confettiFall 3s ease-in forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { opacity: 0; transform: translateY(-20px) rotate(0deg); }
+      10% { opacity: 1; }
+      100% { opacity: 0.6; transform: translateY(680px) rotate(720deg); }
+    }
+
+    .celebrate-content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 8px;
+    }
+
+    .celebrate-badge {
+      display: inline-flex;
+      background: #36b37e;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 999px;
+      margin-bottom: 28px;
+      opacity: 0;
+      transform: scale(0.9);
+      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+    }
+
+    @keyframes popIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .celebrate-number {
+      font-size: 96px;
+      font-weight: 800;
+      line-height: 1;
+      color: #36b37e;
+      letter-spacing: -0.04em;
+      opacity: 0;
+      transform: scale(0.5);
+      animation: numberPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s forwards;
+    }
+
+    @keyframes numberPop {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .celebrate-unit {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-top: 4px;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 0.7s forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .celebrate-headline {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 0.85s forwards;
+    }
+
+    .celebrate-text {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: #444;
+      max-width: 280px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease 1s forwards;
+    }
+
+    .celebrate-text strong {
+      color: #36b37e;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <section class="view prediction-view active" id="predictionView">
+      <div class="prediction-view__body">
+        <span class="badge">The last weight-loss program you'll ever need</span>
+
+        <div class="prediction">
+          <p class="prediction__lead">We predict that by</p>
+          <div class="prediction__lines">
+            <p class="prediction__date">
+              <span class="date-wheel" aria-live="polite">
+                <span class="date-wheel__viewport">
+                  <span class="date-wheel__strip" id="dateStrip"></span>
+                </span>
+              </span>
+            </p>
+            <p class="prediction__goal">you may reach 80 kg</p>
+          </div>
+          <p class="prediction__sub">and lose ~2 kg by your event</p>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-wrap">
+            <svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="curveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#f97316"/>
+                  <stop offset="45%" stop-color="#facc15"/>
+                  <stop offset="100%" stop-color="#36b37e"/>
+                </linearGradient>
+              </defs>
+
+              <text class="chart-label" x="34" y="38" text-anchor="end">90 kg</text>
+              <text class="chart-label" x="34" y="88" text-anchor="end">88 kg</text>
+              <text class="chart-label" x="34" y="158" text-anchor="end">80 kg</text>
+
+              <line class="chart-grid" x1="48" y1="32" x2="48" y2="168"/>
+              <line class="chart-grid" x1="108" y1="32" x2="108" y2="168"/>
+              <line class="chart-grid" x1="178" y1="32" x2="178" y2="168"/>
+              <line class="chart-grid" x1="258" y1="32" x2="258" y2="168"/>
+
+              <text class="chart-label" x="48" y="186" text-anchor="middle">Aug</text>
+              <text class="chart-label" x="108" y="186" text-anchor="middle">Sep</text>
+              <text class="chart-label" x="178" y="186" text-anchor="middle">Nov</text>
+              <text class="chart-label" x="258" y="186" text-anchor="middle">Dec</text>
+
+              <path
+                id="curve"
+                class="curve"
+                stroke="url(#curveGradient)"
+                d="M 48 34 C 68 36, 86 46, 108 82 C 128 114, 150 148, 200 153 C 228 156, 244 154, 258 154"
+              />
+
+              <g class="dot" id="dotStart">
+                <circle class="dot-ring" cx="48" cy="34" r="7" stroke="#f97316"/>
+              </g>
+
+              <g class="dot" id="dotEvent">
+                <circle class="dot-ring" cx="108" cy="82" r="7" stroke="#facc15"/>
+              </g>
+
+              <g class="event-callout" id="eventCallout">
+                <line class="event-callout__line" x1="116" y1="76" x2="168" y2="48"/>
+                <text class="event-callout__text" x="172" y="46">Your event</text>
+              </g>
+
+              <g class="dot" id="dotGoal">
+                <g class="goal-tooltip" id="goalTooltip">
+                  <rect class="goal-tooltip__bg" x="218" y="108" width="72" height="26" rx="8"/>
+                  <text class="goal-tooltip__text" x="254" y="125" text-anchor="middle">Goal 80 kg</text>
+                </g>
+                <circle class="dot-ring" cx="258" cy="154" r="7" stroke="#36b37e"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <p class="footer-text" id="footerText">
+          Good news! Based on BitePal's data-driven approach, you're likely to hit your weight goal by <strong id="footerDate">December 24.</strong>
+        </p>
+      </div>
+
+      <button class="next-btn" id="nextBtn" type="button">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </section>
+
+    <section class="view celebrate-view" id="celebrateView">
+      <div class="confetti" id="confetti"></div>
+      <div class="celebrate-content">
+        <span class="celebrate-badge">Fast track unlocked</span>
+        <p class="celebrate-number" id="daysNumber">14</p>
+        <p class="celebrate-unit">days ahead</p>
+        <h2 class="celebrate-headline">You're ahead of the curve</h2>
+        <p class="celebrate-text" id="celebrateText">
+          Based on your answers, you're on a <strong>fast track</strong> to reach your goal —<br>
+          <strong>14 days sooner</strong> than the average BitePal user with a similar profile.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ITEM_H = 30;
+    const CURVE_DURATION = 1000;
+    const DAY_STEP_MS = 140;
+    const DAY_TRANSITION = '0.22s cubic-bezier(0.22, 0.61, 0.36, 1)';
+    const START_DATE = new Date(2026, 11, 24);
+    const END_DATE = new Date(2026, 11, 10); // 14 days earlier
+    const MONTHS = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const DAYS_AHEAD = 14;
+
+    const curve = document.getElementById('curve');
+    const dotStart = document.getElementById('dotStart');
+    const dotEvent = document.getElementById('dotEvent');
+    const dotGoal = document.getElementById('dotGoal');
+    const eventCallout = document.getElementById('eventCallout');
+    const goalTooltip = document.getElementById('goalTooltip');
+    const footerText = document.getElementById('footerText');
+    const footerDate = document.getElementById('footerDate');
+    const dateStrip = document.getElementById('dateStrip');
+    const nextBtn = document.getElementById('nextBtn');
+    const predictionView = document.getElementById('predictionView');
+    const celebrateView = document.getElementById('celebrateView');
+    const confetti = document.getElementById('confetti');
+    const daysNumber = document.getElementById('daysNumber');
+    const celebrateText = document.getElementById('celebrateText');
+
+    daysNumber.textContent = DAYS_AHEAD;
+    celebrateText.innerHTML = `Based on your answers, you're on a <strong>fast track</strong> to reach your goal —<br><strong>${DAYS_AHEAD} days sooner</strong> than the average BitePal user with a similar profile.`;
+
+    const dates = [];
+    for (let d = new Date(START_DATE); d >= END_DATE; d.setDate(d.getDate() - 1)) {
+      dates.push(new Date(d));
+    }
+
+    dateStrip.innerHTML = dates.map(d => `
+      <div class="date-wheel__row">
+        <span class="date-wheel__month">${MONTHS[d.getMonth()]}</span>
+        <span class="date-wheel__day">${d.getDate()}</span>
+      </div>
+    `).join('');
+
+    function setDateIndex(i, animate) {
+      dateStrip.style.transition = animate ? `transform ${DAY_TRANSITION}` : 'none';
+      dateStrip.style.transform = `translateY(${-i * ITEM_H}px)`;
+    }
+
+    function formatDate(d) {
+      return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+    }
+
+    function animateChart() {
+      const length = curve.getTotalLength();
+      curve.style.strokeDasharray = length;
+      curve.style.strokeDashoffset = length;
+
+      const start = performance.now();
+      let startShown = false;
+      let eventShown = false;
+      let goalShown = false;
+
+      function drawFrame(now) {
+        const t = Math.min(1, (now - start) / CURVE_DURATION);
+        const eased = 1 - Math.pow(1 - t, 3);
+        curve.style.strokeDashoffset = length * (1 - eased);
+
+        if (!startShown && t >= 0.08) {
+          startShown = true;
+          dotStart.classList.add('visible');
+        }
+        if (!eventShown && t >= 0.42) {
+          eventShown = true;
+          dotEvent.classList.add('visible');
+          eventCallout.classList.add('visible');
+        }
+        if (!goalShown && t >= 0.92) {
+          goalShown = true;
+          dotGoal.classList.add('visible');
+          goalTooltip.classList.add('visible');
+        }
+
+        if (t < 1) {
+          requestAnimationFrame(drawFrame);
+        } else {
+          curve.style.strokeDashoffset = 0;
+          spinDateWheel();
+        }
+      }
+
+      requestAnimationFrame(drawFrame);
+    }
+
+    function spinDateWheel() {
+      const last = dates.length - 1;
+      let i = 0;
+
+      function step() {
+        i++;
+        if (i > last) {
+          const finalDate = dates[last];
+          footerDate.textContent = formatDate(finalDate) + '.';
+          footerText.classList.add('visible');
+          setTimeout(() => nextBtn.classList.add('visible'), 300);
+          return;
+        }
+
+        setDateIndex(i, true);
+        setTimeout(step, DAY_STEP_MS);
+      }
+
+      step();
+    }
+
+    function spawnConfetti() {
+      const colors = ['#36b37e', '#facc15', '#f97316', '#86efac', '#fde047'];
+      confetti.innerHTML = '';
+      for (let i = 0; i < 36; i++) {
+        const piece = document.createElement('span');
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[i % colors.length];
+        piece.style.animationDelay = Math.random() * 1.2 + 's';
+        piece.style.animationDuration = 2 + Math.random() * 2 + 's';
+        piece.style.width = 4 + Math.random() * 6 + 'px';
+        piece.style.height = piece.style.width;
+        confetti.appendChild(piece);
+      }
+    }
+
+    function showCelebrate() {
+      predictionView.classList.add('leaving');
+      predictionView.classList.remove('active');
+      celebrateView.classList.add('active');
+      spawnConfetti();
+      setTimeout(() => predictionView.classList.remove('leaving'), 500);
+    }
+
+    nextBtn.addEventListener('click', showCelebrate);
+
+    setDateIndex(0, false);
+    animateChart();
+  </script>
+</body>
+</html>

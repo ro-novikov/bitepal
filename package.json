@@ -1,0 +1,12 @@
+{
+  "name": "bitepal-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "rewrites": [{ "source": "/", "destination": "/04/" }],
+  "functions": {
+    "api/motivation.js": {
+      "maxDuration": 30
+    }
+  }
+}

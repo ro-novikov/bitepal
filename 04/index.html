@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deeply personal motivation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #d8d8dc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 340px;
+      height: 680px;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (min-width: 380px) {
+      .screen {
+        border-radius: 20px;
+        box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .view {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      padding: 28px 20px 24px;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.45s ease, transform 0.45s ease, visibility 0.45s;
+      z-index: 0;
+    }
+
+    .view.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+      z-index: 1;
+    }
+
+    .view.leaving {
+      opacity: 0;
+      transform: translateY(-8px);
+      z-index: 2;
+    }
+
+    .skip-btn {
+      align-self: flex-end;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 0;
+      margin-bottom: 12px;
+      transition: color 0.15s ease;
+    }
+
+    .skip-btn:hover {
+      color: #6b7280;
+    }
+
+    .back-btn {
+      align-self: flex-start;
+      border: none;
+      background: transparent;
+      color: #1a1a1a;
+      cursor: pointer;
+      padding: 4px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s ease;
+    }
+
+    .back-btn:hover {
+      opacity: 0.6;
+    }
+
+    .back-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .ask-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding-top: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      background: #e8f8ef;
+      color: #36b37e;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+      line-height: 1.3;
+    }
+
+    .ask-headline {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-bottom: auto;
+      padding: 0 8px;
+    }
+
+    .mic-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+
+    .mic-hint {
+      font-size: 14px;
+      font-weight: 600;
+      color: #9ca3af;
+      min-height: 20px;
+      transition: color 0.2s ease;
+    }
+
+    .mic-hint.recording {
+      color: #36b37e;
+    }
+
+    .mic-btn-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-pulse {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: rgba(54, 179, 126, 0.15);
+      opacity: 0;
+      transform: scale(0.85);
+      pointer-events: none;
+    }
+
+    .mic-btn-wrap.recording .mic-pulse {
+      animation: micPulse 1.4s ease-out infinite;
+    }
+
+    .mic-pulse:nth-child(2) {
+      animation-delay: 0.45s;
+    }
+
+    @keyframes micPulse {
+      0% { opacity: 0.7; transform: scale(0.85); }
+      100% { opacity: 0; transform: scale(1.55); }
+    }
+
+    .mic-btn {
+      position: relative;
+      z-index: 1;
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 50%;
+      background: #1a1a1a;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .mic-btn:hover {
+      background: #2a2a2a;
+    }
+
+    .mic-btn.recording {
+      background: #36b37e;
+      transform: scale(1.06);
+      box-shadow: 0 0 0 6px rgba(54, 179, 126, 0.2);
+    }
+
+    .mic-btn svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .waveform {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .waveform.visible {
+      opacity: 1;
+    }
+
+    .waveform span {
+      display: block;
+      width: 4px;
+      height: 8px;
+      background: #36b37e;
+      border-radius: 999px;
+      animation: waveBar 0.8s ease-in-out infinite;
+    }
+
+    .waveform span:nth-child(2) { animation-delay: 0.1s; }
+    .waveform span:nth-child(3) { animation-delay: 0.2s; }
+    .waveform span:nth-child(4) { animation-delay: 0.15s; }
+    .waveform span:nth-child(5) { animation-delay: 0.05s; }
+
+    @keyframes waveBar {
+      0%, 100% { height: 8px; }
+      50% { height: 28px; }
+    }
+
+    .next-btn {
+      width: 100%;
+      margin-top: auto;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 999px;
+      background: #1a1a1a;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s ease, transform 0.4s ease, background 0.15s ease;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .next-btn.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .next-btn:hover {
+      background: #2a2a2a;
+    }
+
+    .next-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ——— Motivation result ——— */
+    .motivation-view {
+      background: linear-gradient(165deg, #e8f8ef 0%, #ffffff 45%, #fff9e6 100%);
+      overflow: hidden;
+      padding-bottom: 24px;
+    }
+
+    .motivation-view::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(54, 179, 126, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 85% 25%, rgba(250, 204, 21, 0.18) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    .motivation-content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 8px;
+    }
+
+    .motivation-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 16px;
+    }
+
+    .motivation-loading.hidden {
+      display: none;
+    }
+
+    .motivation-result {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .motivation-result.hidden {
+      display: none;
+    }
+
+    .motivation-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid #e8f8ef;
+      border-top-color: #36b37e;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .motivation-loading__text {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .motivation-error {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ef4444;
+      max-width: 260px;
+      line-height: 1.4;
+      margin-top: 8px;
+    }
+
+    .motivation-error.hidden {
+      display: none;
+    }
+
+    .motivation-badge {
+      display: inline-flex;
+      background: #36b37e;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    .motivation-badge.animate {
+      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes popIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .your-why-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #36b37e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      opacity: 0;
+    }
+
+    .your-why-label.animate {
+      animation: fadeUp 0.45s ease 0.15s forwards;
+    }
+
+    .your-why-quote {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.3;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      max-width: 280px;
+      margin-bottom: 28px;
+      opacity: 0;
+    }
+
+    .your-why-quote.animate {
+      animation: fadeUp 0.5s ease 0.35s forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ai-card {
+      background: #fff;
+      border: 1.5px solid #ebebeb;
+      border-radius: 18px;
+      padding: 20px 18px;
+      max-width: 290px;
+      text-align: left;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    .ai-card.animate {
+      animation: fadeUp 0.55s ease 0.65s forwards;
+    }
+
+    .ai-card__label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #36b37e;
+      margin-bottom: 10px;
+    }
+
+    .ai-card__label svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .ai-card__text {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #1a1a1a;
+    }
+
+    .ai-card__text .word {
+      opacity: 0;
+      display: inline;
+    }
+
+    .ai-card__text .word.visible {
+      opacity: 1;
+      transition: opacity 0.12s ease;
+    }
+
+    .sparkles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sparkles span {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #36b37e;
+      opacity: 0;
+    }
+
+    .sparkles span.animate {
+      animation: sparkle 1.2s ease forwards;
+    }
+
+    @keyframes sparkle {
+      0% { opacity: 0; transform: scale(0); }
+      30% { opacity: 0.8; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0) translateY(-30px); }
+    }
+
+    .skip-view {
+      align-items: center;
+    }
+
+    .skip-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 12px;
+    }
+
+    .skip-headline {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .skip-text {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #6b7280;
+      max-width: 270px;
+    }
+
+    /* ——— Sales page ——— */
+    .sales-view {
+      padding: 0;
+      background: #f3f0ff;
+      overflow: hidden;
+    }
+
+    .sales-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px 24px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sales-block {
+      background: #fff;
+      border-radius: 24px;
+      padding: 20px 18px;
+      margin-bottom: 12px;
+    }
+
+    .sales-block__hint {
+      font-size: 12px;
+      font-weight: 700;
+      color: #c4c4c4;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .sales-block__placeholder {
+      background: #f5f5f7;
+      border-radius: 16px;
+      min-height: 72px;
+    }
+
+    .sales-block__placeholder--tall {
+      min-height: 120px;
+    }
+
+    .sales-block__placeholder--row {
+      min-height: 56px;
+      margin-bottom: 10px;
+    }
+
+    .sales-block__placeholder--row:last-child {
+      margin-bottom: 0;
+    }
+
+    .sales-block--why {
+      background: linear-gradient(165deg, #e8f8ef 0%, #ffffff 100%);
+      border: 1.5px solid #d4f0e2;
+    }
+
+    .your-why-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: #36b37e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    .your-why-text {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <!-- Ask motivation -->
+    <section class="view ask-view active" id="askView">
+      <button class="skip-btn" id="skipBtn" type="button">Skip</button>
+
+      <div class="ask-content">
+        <span class="badge">Personalize your plan</span>
+        <h1 class="ask-headline">What's your motivation for losing weight?</h1>
+
+        <div class="mic-area">
+          <div class="waveform" id="waveform">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="mic-btn-wrap" id="micWrap">
+            <span class="mic-pulse"></span>
+            <span class="mic-pulse"></span>
+            <button class="mic-btn" id="micBtn" type="button" aria-label="Tap to share">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </button>
+          </div>
+          <p class="mic-hint" id="micHint">Tap to share</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Motivation result -->
+    <section class="view motivation-view" id="motivationView">
+      <div class="sparkles" id="sparkles"></div>
+      <div class="motivation-content">
+        <div class="motivation-loading" id="motivationLoading">
+          <div class="motivation-spinner"></div>
+          <p class="motivation-loading__text">Understanding your why…</p>
+          <p class="motivation-error hidden" id="motivationError"></p>
+        </div>
+        <div class="motivation-result hidden" id="motivationResult">
+          <span class="motivation-badge" id="motivationBadge">Your motivation, unlocked</span>
+          <p class="your-why-label" id="yourWhyLabel">Your why</p>
+          <p class="your-why-quote" id="yourWhyQuote"></p>
+          <div class="ai-card" id="aiCard">
+            <p class="ai-card__label">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+              BitePal
+            </p>
+            <p class="ai-card__text" id="aiText"></p>
+          </div>
+        </div>
+      </div>
+      <button class="next-btn" id="nextBtn" type="button">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- Sales page -->
+    <section class="view sales-view" id="salesView">
+      <div class="sales-scroll">
+        <div class="sales-block">
+          <p class="sales-block__hint">Profile</p>
+          <div class="sales-block__placeholder sales-block__placeholder--tall"></div>
+        </div>
+
+        <div class="sales-block sales-block--why">
+          <p class="your-why-tag">Your why</p>
+          <p class="your-why-text" id="salesWhyText">"I want to feel confident and have more energy every day."</p>
+        </div>
+
+        <div class="sales-block">
+          <p class="sales-block__hint">Water intake</p>
+          <div class="sales-block__placeholder"></div>
+        </div>
+
+        <div class="sales-block">
+          <p class="sales-block__hint">Your plan</p>
+          <div class="sales-block__placeholder sales-block__placeholder--row"></div>
+          <div class="sales-block__placeholder sales-block__placeholder--row"></div>
+          <div class="sales-block__placeholder sales-block__placeholder--row"></div>
+        </div>
+
+        <div class="sales-block">
+          <p class="sales-block__hint">Plan targets</p>
+          <div class="sales-block__placeholder"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skip -->
+    <section class="view skip-view" id="skipView">
+      <button class="back-btn" id="backBtn" type="button" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <div class="skip-content">
+        <h2 class="skip-headline">You skipped this step</h2>
+        <p class="skip-text">Please try again — share your motivation to see how BitePal works.</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const askView = document.getElementById('askView');
+    const motivationView = document.getElementById('motivationView');
+    const salesView = document.getElementById('salesView');
+    const skipView = document.getElementById('skipView');
+    const skipBtn = document.getElementById('skipBtn');
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const micBtn = document.getElementById('micBtn');
+    const micWrap = document.getElementById('micWrap');
+    const micHint = document.getElementById('micHint');
+    const waveform = document.getElementById('waveform');
+
+    const motivationLoading = document.getElementById('motivationLoading');
+    const motivationResult = document.getElementById('motivationResult');
+    const motivationError = document.getElementById('motivationError');
+    const motivationBadge = document.getElementById('motivationBadge');
+    const yourWhyLabel = document.getElementById('yourWhyLabel');
+    const yourWhyQuote = document.getElementById('yourWhyQuote');
+    const aiCard = document.getElementById('aiCard');
+    const aiText = document.getElementById('aiText');
+    const sparkles = document.getElementById('sparkles');
+    const salesWhyText = document.getElementById('salesWhyText');
+
+    let recording = false;
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let currentQuote = '';
+
+    function switchView(from, to) {
+      from.classList.add('leaving');
+      from.classList.remove('active');
+      to.classList.add('active');
+      setTimeout(() => from.classList.remove('leaving'), 450);
+    }
+
+    function setRecordingState(on) {
+      recording = on;
+      micBtn.classList.toggle('recording', on);
+      micWrap.classList.toggle('recording', on);
+      micHint.classList.toggle('recording', on);
+      waveform.classList.toggle('visible', on);
+      micHint.textContent = on ? 'Tap again to save' : 'Tap to share';
+      micBtn.disabled = false;
+    }
+
+    async function startRecording() {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+      mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+      mediaRecorder.start();
+    }
+
+    function stopRecording() {
+      return new Promise(resolve => {
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+          mediaStream.getTracks().forEach(track => track.stop());
+          mediaStream = null;
+          resolve(blob);
+        };
+        mediaRecorder.stop();
+      });
+    }
+
+    function blobToBase64(blob) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // Set your Vercel URL here after deploying (no trailing slash).
+    // Used when the demo runs on GitHub Pages.
+    const VERCEL_API = 'https://YOUR-PROJECT.vercel.app';
+    const API_BASE = location.hostname.endsWith('github.io') ? VERCEL_API : '';
+
+    async function analyzeMotivation(blob) {
+      const audio = await blobToBase64(blob);
+      const res = await fetch(`${API_BASE}/api/motivation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio, mimeType: blob.type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    micBtn.addEventListener('click', async () => {
+      if (!recording) {
+        try {
+          micBtn.disabled = true;
+          await startRecording();
+          setRecordingState(true);
+        } catch {
+          micHint.textContent = 'Microphone access needed';
+        } finally {
+          micBtn.disabled = false;
+        }
+        return;
+      }
+
+      setRecordingState(false);
+      micBtn.disabled = true;
+      micHint.textContent = 'Processing…';
+
+      try {
+        const blob = await stopRecording();
+        await goToMotivation(blob);
+      } catch {
+        micHint.textContent = 'Something went wrong';
+        micBtn.disabled = false;
+      }
+    });
+
+    async function goToMotivation(blob) {
+      motivationLoading.classList.remove('hidden');
+      motivationResult.classList.add('hidden');
+      motivationError.classList.add('hidden');
+      nextBtn.classList.remove('visible');
+      sparkles.innerHTML = '';
+
+      switchView(askView, motivationView);
+
+      try {
+        const data = await analyzeMotivation(blob);
+        currentQuote = data.quote;
+        runMotivationAnimation(data.quote, data.response);
+      } catch (err) {
+        motivationError.textContent = err.message;
+        motivationError.classList.remove('hidden');
+        micBtn.disabled = false;
+        micHint.textContent = 'Tap to share';
+      }
+    }
+
+    function runMotivationAnimation(quote, response) {
+      motivationLoading.classList.add('hidden');
+      motivationResult.classList.remove('hidden');
+
+      motivationBadge.classList.remove('animate');
+      yourWhyLabel.classList.remove('animate');
+      yourWhyQuote.classList.remove('animate');
+      aiCard.classList.remove('animate');
+      nextBtn.classList.remove('visible');
+      sparkles.innerHTML = '';
+
+      void motivationBadge.offsetWidth;
+
+      yourWhyQuote.textContent = quote;
+      motivationBadge.classList.add('animate');
+      yourWhyLabel.classList.add('animate');
+      yourWhyQuote.classList.add('animate');
+      aiCard.classList.add('animate');
+
+      const words = response.split(' ');
+      aiText.innerHTML = words.map(w => `<span class="word">${w} </span>`).join('');
+
+      setTimeout(() => {
+        const wordEls = aiText.querySelectorAll('.word');
+        wordEls.forEach((el, i) => {
+          setTimeout(() => el.classList.add('visible'), i * 55);
+        });
+        const totalMs = wordEls.length * 55 + 400;
+        setTimeout(() => nextBtn.classList.add('visible'), totalMs);
+      }, 900);
+
+      spawnSparkles();
+      micBtn.disabled = false;
+      micHint.textContent = 'Tap to share';
+    }
+
+    function spawnSparkles() {
+      for (let i = 0; i < 12; i++) {
+        const s = document.createElement('span');
+        s.style.left = 10 + Math.random() * 80 + '%';
+        s.style.top = 10 + Math.random() * 60 + '%';
+        s.style.animationDelay = 0.5 + Math.random() * 1.2 + 's';
+        s.classList.add('animate');
+        sparkles.appendChild(s);
+      }
+    }
+
+    nextBtn.addEventListener('click', () => {
+      salesWhyText.textContent = currentQuote;
+      switchView(motivationView, salesView);
+    });
+
+    skipBtn.addEventListener('click', () => switchView(askView, skipView));
+    backBtn.addEventListener('click', () => switchView(skipView, askView));
+  </script>
+</body>
+</html>

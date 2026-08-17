@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stones for UK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #d8d8dc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+
+    .screen {
+      width: 100%;
+      max-width: 340px;
+      min-height: 680px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 20px 24px;
+      position: relative;
+    }
+
+    @media (min-width: 380px) {
+      .screen {
+        border-radius: 20px;
+        box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .header {
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-text {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #36b37e;
+      letter-spacing: -0.02em;
+      position: relative;
+    }
+
+    .logo-i {
+      position: relative;
+      display: inline-block;
+    }
+
+    .logo-leaves {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 9px;
+    }
+
+    .headline {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1.2;
+      text-align: center;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+
+    .subheadline {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      color: #b0b0b0;
+      margin-bottom: 20px;
+    }
+
+    .unit-toggle {
+      display: flex;
+      max-width: 220px;
+      margin: 0 auto 0;
+      background: #f2f2f7;
+      border-radius: 999px;
+      padding: 3px;
+      position: relative;
+      user-select: none;
+    }
+
+    .unit-toggle__slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: calc((100% - 6px) / 3);
+      height: calc(100% - 6px);
+      background: #ffffff;
+      border-radius: 999px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .unit-toggle__option {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #9ca3af;
+      padding: 8px 0;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+      transition: color 0.2s ease;
+      border-radius: 999px;
+    }
+
+    .unit-toggle__option.active {
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .unit-toggle__option:active {
+      transform: scale(0.96);
+    }
+
+    .buttons {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      padding-top: 32px;
+      padding-bottom: 16px;
+    }
+
+    .goal-btn {
+      width: 100%;
+      padding: 18px 20px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 18px;
+      background: #ffffff;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .goal-btn:hover {
+      border-color: #d4d4d4;
+      background: #fafafa;
+    }
+
+    .goal-btn:active,
+    .goal-btn.pressed {
+      transform: scale(0.98);
+      background: #f0f0f0;
+      border-color: #ccc;
+    }
+
+    .footer {
+      flex-shrink: 0;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #b0b0b0;
+      padding-top: 8px;
+    }
+
+    .footer a {
+      color: #1a1a1a;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-text">
+          B<span class="logo-i">i<svg class="logo-leaves" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 10C6 10 2 7 3 3C4 0 6 1 6 4" fill="#36b37e"/>
+            <path d="M10 10C10 10 14 7 13 3C12 0 10 1 10 4" fill="#36b37e"/>
+          </svg></span>tePal
+        </span>
+      </div>
+
+      <h1 class="headline">Personalized weight-loss plan according to your goal</h1>
+      <p class="subheadline">What is your weight goal?</p>
+
+      <div class="unit-toggle" role="tablist" aria-label="Weight unit">
+        <div class="unit-toggle__slider" id="toggleSlider"></div>
+        <button class="unit-toggle__option" role="tab" data-unit="kg" aria-selected="false">kg</button>
+        <button class="unit-toggle__option" role="tab" data-unit="lbs" aria-selected="false">lbs</button>
+        <button class="unit-toggle__option active" role="tab" data-unit="st" aria-selected="true">st</button>
+      </div>
+    </header>
+
+    <div class="buttons">
+      <button class="goal-btn" data-goal="0">Lose 1–2 st</button>
+      <button class="goal-btn" data-goal="1">Lose 2–3 st</button>
+      <button class="goal-btn" data-goal="2">Lose over 3 st</button>
+      <button class="goal-btn" data-goal="3">I haven't decided yet</button>
+    </div>
+
+    <p class="footer">
+      By continuing you agree with our<br>
+      <a href="#">Terms of Use</a> and <a href="#">Privacy Notice</a>
+    </p>
+  </div>
+
+  <script>
+    const GOAL_LABELS = {
+      kg: [
+        'Lose 1–10 kg',
+        'Lose 11–20 kg',
+        'Lose over 20 kg',
+        "I haven't decided yet"
+      ],
+      lbs: [
+        'Lose 2–22 lbs',
+        'Lose 24–44 lbs',
+        'Lose over 44 lbs',
+        "I haven't decided yet"
+      ],
+      st: [
+        'Lose 1–2 st',
+        'Lose 2–3 st',
+        'Lose over 3 st',
+        "I haven't decided yet"
+      ]
+    };
+
+    const UNIT_ORDER = ['kg', 'lbs', 'st'];
+    let currentUnit = 'st';
+
+    const slider = document.getElementById('toggleSlider');
+    const toggleOptions = document.querySelectorAll('.unit-toggle__option');
+    const goalButtons = document.querySelectorAll('.goal-btn');
+
+    function updateSliderPosition() {
+      const index = UNIT_ORDER.indexOf(currentUnit);
+      slider.style.transform = `translateX(${index * 100}%)`;
+    }
+
+    function updateGoalLabels() {
+      const labels = GOAL_LABELS[currentUnit];
+      goalButtons.forEach((btn, i) => {
+        btn.textContent = labels[i];
+      });
+    }
+
+    function setUnit(unit) {
+      currentUnit = unit;
+      toggleOptions.forEach(opt => {
+        const isActive = opt.dataset.unit === unit;
+        opt.classList.toggle('active', isActive);
+        opt.setAttribute('aria-selected', isActive);
+      });
+      updateSliderPosition();
+      updateGoalLabels();
+    }
+
+    toggleOptions.forEach(opt => {
+      opt.addEventListener('click', () => setUnit(opt.dataset.unit));
+    });
+
+    goalButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 150);
+      });
+    });
+
+    updateSliderPosition();
+  </script>
+</body>
+</html>

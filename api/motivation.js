@@ -2,7 +2,8 @@ const API_KEY = process.env.OPENAI_API_KEY;
 
 const ALLOWED_ORIGINS = [
   'https://ro-novikov.github.io',
-  'https://bitepal.vercel.app',
+  'https://bitepal-eight.vercel.app',
+  'https://bitepal-q4pksfb2w-ro-5be0.vercel.app',
 ];
 
 async function transcribeAudio(buffer, mimeType) {

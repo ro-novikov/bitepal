@@ -424,19 +424,26 @@
       animation: fadeUp 0.45s ease 0.15s forwards;
     }
 
-    .your-why-quote {
-      font-size: 20px;
-      font-weight: 800;
-      line-height: 1.3;
-      color: #1a1a1a;
-      letter-spacing: -0.02em;
+    .your-why-quotes {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       max-width: 280px;
       margin-bottom: 28px;
+      width: 100%;
+    }
+
+    .your-why-quote {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
       opacity: 0;
     }
 
     .your-why-quote.animate {
-      animation: fadeUp 0.5s ease 0.35s forwards;
+      animation: fadeUp 0.5s ease forwards;
     }
 
     @keyframes fadeUp {
@@ -618,6 +625,13 @@
       color: #1a1a1a;
       letter-spacing: -0.02em;
     }
+
+    .your-why-texts {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -662,7 +676,7 @@
         <div class="motivation-result hidden" id="motivationResult">
           <span class="motivation-badge" id="motivationBadge">Your motivation, unlocked</span>
           <p class="your-why-label" id="yourWhyLabel">Your why</p>
-          <p class="your-why-quote" id="yourWhyQuote"></p>
+          <div class="your-why-quotes" id="yourWhyQuotes"></div>
           <div class="ai-card" id="aiCard">
             <p class="ai-card__label">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
@@ -690,7 +704,7 @@
 
         <div class="sales-block sales-block--why">
           <p class="your-why-tag">Your why</p>
-          <p class="your-why-text" id="salesWhyText">"I want to feel confident and have more energy every day."</p>
+          <div class="your-why-texts" id="salesWhyTexts"></div>
         </div>
 
         <div class="sales-block">
@@ -744,17 +758,23 @@
     const motivationError = document.getElementById('motivationError');
     const motivationBadge = document.getElementById('motivationBadge');
     const yourWhyLabel = document.getElementById('yourWhyLabel');
-    const yourWhyQuote = document.getElementById('yourWhyQuote');
+    const yourWhyQuotes = document.getElementById('yourWhyQuotes');
     const aiCard = document.getElementById('aiCard');
     const aiText = document.getElementById('aiText');
     const sparkles = document.getElementById('sparkles');
-    const salesWhyText = document.getElementById('salesWhyText');
+    const salesWhyTexts = document.getElementById('salesWhyTexts');
 
     let recording = false;
     let mediaStream = null;
     let mediaRecorder = null;
     let audioChunks = [];
-    let currentQuote = '';
+    let currentQuotes = [];
+
+    function renderQuotes(container, quotes) {
+      container.innerHTML = quotes.map((q, i) =>
+        `<p class="your-why-quote" style="animation-delay:${0.35 + i * 0.15}s">${q}</p>`
+      ).join('');
+    }
 
     function switchView(from, to) {
       from.classList.add('leaving');
@@ -859,8 +879,8 @@
 
       try {
         const data = await analyzeMotivation(blob);
-        currentQuote = data.quote;
-        runMotivationAnimation(data.quote, data.response);
+        currentQuotes = data.quotes;
+        runMotivationAnimation(data.quotes, data.response);
       } catch (err) {
         motivationError.textContent = err.message;
         motivationError.classList.remove('hidden');
@@ -869,23 +889,22 @@
       }
     }
 
-    function runMotivationAnimation(quote, response) {
+    function runMotivationAnimation(quotes, response) {
       motivationLoading.classList.add('hidden');
       motivationResult.classList.remove('hidden');
 
       motivationBadge.classList.remove('animate');
       yourWhyLabel.classList.remove('animate');
-      yourWhyQuote.classList.remove('animate');
       aiCard.classList.remove('animate');
       nextBtn.classList.remove('visible');
       sparkles.innerHTML = '';
 
       void motivationBadge.offsetWidth;
 
-      yourWhyQuote.textContent = quote;
+      renderQuotes(yourWhyQuotes, quotes);
       motivationBadge.classList.add('animate');
       yourWhyLabel.classList.add('animate');
-      yourWhyQuote.classList.add('animate');
+      yourWhyQuotes.querySelectorAll('.your-why-quote').forEach(el => el.classList.add('animate'));
       aiCard.classList.add('animate');
 
       const words = response.split(' ');
@@ -917,7 +936,9 @@
     }
 
     nextBtn.addEventListener('click', () => {
-      salesWhyText.textContent = currentQuote;
+      salesWhyTexts.innerHTML = currentQuotes.map(q =>
+        `<p class="your-why-text">${q}</p>`
+      ).join('');
       switchView(motivationView, salesView);
     });
 

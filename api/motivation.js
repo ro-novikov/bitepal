@@ -1,6 +1,22 @@
 import { processMotivationRequest } from '../lib/motivation.mjs';
 
+const ALLOWED_ORIGINS = [
+  'https://ro-novikov.github.io',
+  'https://bitepal.vercel.app',
+];
+
 export default async function handler(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
